@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>계통추출기 — 농산물 생산조사</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18;
+    --paper: #f5f0e8;
+    --field: #4a7c3f;
+    --field-light: #7ab870;
+    --field-pale: #d4e8d0;
+    --accent: #c8821a;
+    --accent-pale: #f5e4c8;
+    --rule: #c8bfaa;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Nanum Myeongjo', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,0.03) 28px, rgba(0,0,0,0.03) 29px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Field pattern background */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    right: -20%;
+    width: 60vw;
+    height: 160vh;
+    background: repeating-linear-gradient(
+      -35deg,
+      transparent,
+      transparent 18px,
+      rgba(74,124,63,0.06) 18px,
+      rgba(74,124,63,0.06) 20px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 48px;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .header-left {}
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--field);
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--field);
+  }
+
+  .header-badge {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    padding: 6px 12px;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* Form section */
+  .form-card {
+    background: white;
+    border: 2px solid var(--ink);
+    padding: 36px;
+    margin-bottom: 32px;
+    position: relative;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .form-card::before {
+    content: '입력값';
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: var(--field);
+    color: white;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    padding: 3px 10px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  label {
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  label em {
+    font-style: normal;
+    color: var(--accent);
+    margin-left: 4px;
+  }
+
+  input[type="number"] {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    border: none;
+    border-bottom: 2px solid var(--rule);
+    background: transparent;
+    padding: 8px 0;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-bottom-color: var(--field);
+  }
+
+  input[type="number"].error {
+    border-bottom-color: #c0392b;
+    color: #c0392b;
+  }
+
+  .field-hint {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: #999;
+    margin-top: 2px;
+  }
+
+  /* Formula display */
+  .formula-bar {
+    background: var(--field-pale);
+    border: 1.5px solid var(--field-light);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .formula-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--field);
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+
+  .formula-expr {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    flex: 1;
+  }
+
+  .formula-expr b {
+    color: var(--field);
+  }
+
+  /* Error */
+  .error-msg {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #c0392b;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    border-left: 3px solid #c0392b;
+    background: #fdf0ee;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* Button */
+  .btn-extract {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--field);
+    color: white;
+    border: 2px solid var(--ink);
+    padding: 14px 32px;
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-weight: 600;
+  }
+
+  .btn-extract:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .btn-extract:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .btn-extract svg { flex-shrink: 0; }
+
+  /* Results section */
+  .results-section {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.4s, transform 0.4s;
+    pointer-events: none;
+  }
+
+  .results-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .results-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .results-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--accent-pale);
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 10px;
+    letter-spacing: 0.08em;
+  }
+
+  /* Number grid */
+  .number-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  .num-cell {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    width: 60px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--rule);
+    background: white;
+    color: var(--ink);
+    position: relative;
+    transition: all 0.15s;
+    animation: popIn 0.3s ease backwards;
+  }
+
+  .num-cell.start-cell {
+    background: var(--field);
+    color: white;
+    border-color: var(--field);
+  }
+
+  .num-cell:hover {
+    border-color: var(--field);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 0 var(--field);
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* Table */
+  .result-table-wrap {
+    overflow-x: auto;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody tr:hover { background: var(--field-pale); }
+
+  tbody td {
+    padding: 11px 16px;
+    vertical-align: middle;
+  }
+
+  td.idx { color: #999; font-size: 12px; }
+
+  td.num {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--field);
+  }
+
+  td.num.start { color: var(--accent); }
+
+  td.formula-cell { color: #666; font-size: 12px; }
+
+  .start-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    background: var(--accent);
+    color: white;
+    padding: 2px 5px;
+    letter-spacing: 0.1em;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* Copy button */
+  .btn-copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 2px solid var(--ink);
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: all 0.1s;
+    margin-top: 16px;
+  }
+
+  .btn-copy:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+  .btn-copy:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--ink); }
+
+  /* Address row */
+  .address-row {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .address-row label {
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  input[type="text"]#address {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink);
+    border: 1.5px solid var(--rule);
+    border-radius: 0;
+    background: var(--field-pale);
+    padding: 12px 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  input[type="text"]#address::placeholder {
+    color: #aaa;
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+
+  input[type="text"]#address:focus {
+    border-color: var(--field);
+    background: white;
+  }
+
+  /* Crop selector */
+  .crop-row {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .crop-row label {
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  .crop-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .crop-btn {
+    font-family: var(--serif);
+    font-size: 14px;
+    padding: 8px 18px;
+    border: 2px solid var(--rule);
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--rule);
+    letter-spacing: 0.02em;
+  }
+
+  .crop-btn:hover {
+    border-color: var(--field);
+    color: var(--field);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 var(--field);
+  }
+
+  .crop-btn.active {
+    background: var(--field);
+    color: white;
+    border-color: var(--field);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  /* Footer note */
+  .foot-note {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px;
+    font-family: var(--mono);
+    color: #aaa;
+    letter-spacing: 0.05em;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .foot-note::before {
+    content: '※';
+    color: var(--field);
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">농산물 생산조사 도구</div>
+      <h1>계통<span>추출기</span></h1>
+    </div>
+    <div class="header-badge">
+      <div class="badge-dot"></div>
+      마늘 · 양파 · 무 · 배추
+    </div>
+  </header>
+
+  <div class="form-card">
+
+    <div class="address-row">
+      <label>조사 주소</label>
+      <input type="text" id="address" placeholder="주소를 입력하고 캡처해서 저장하세요.">
+    </div>
+
+    <div class="crop-row">
+      <label>작물 선택</label>
+      <div class="crop-btns">
+        <button class="crop-btn active" data-crop="마늘">🧄 마늘</button>
+        <button class="crop-btn" data-crop="양파">🧅 양파</button>
+        <button class="crop-btn" data-crop="무">🌿 무</button>
+        <button class="crop-btn" data-crop="배추">🥬 배추</button>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label>전체 개수<em>N</em></label>
+        <input type="number" id="total" placeholder="예) 120" min="1">
+        <div class="field-hint">모집단 전체 필지 수</div>
+      </div>
+      <div class="field-group">
+        <label>추출 개수<em>n</em></label>
+        <input type="number" id="count" placeholder="예) 10" min="1">
+        <div class="field-hint">표본으로 뽑을 수</div>
+      </div>
+      <div class="field-group">
+        <label>시작 난수<em>r</em></label>
+        <input type="number" id="start" placeholder="예) 7.8" min="0.1" step="0.1">
+        <div class="field-hint" id="start-hint">1 이상, 추출간격 이하</div>
+      </div>
+    </div>
+
+    <div class="formula-bar">
+      <span class="formula-label">추출 간격 k =</span>
+      <span class="formula-expr" id="formula-display">
+        N ÷ n = <b>?</b>
+      </span>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <button class="btn-extract" onclick="extract()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      계통추출 실행
+    </button>
+  </div>
+
+  <div class="results-section" id="results">
+    <div class="results-header">
+      <div class="results-title" id="results-title">추출 결과</div>
+      <div class="results-meta" id="results-meta"></div>
+    </div>
+
+    <div class="number-grid" id="number-grid"></div>
+
+    <div class="result-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>순번</th>
+            <th>추출번호</th>
+            <th>계산식</th>
+          </tr>
+        </thead>
+        <tbody id="result-tbody"></tbody>
+      </table>
+    </div>
+
+    <button class="btn-copy" onclick="copyResults()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+      </svg>
+      번호 목록 복사
+    </button>
+  </div>
+
+  <div class="foot-note">
+    계통추출(Systematic Sampling): 추출간격 k = N÷n (소수 둘째 자리 반올림, 첫째 자리까지). 시작난수 r: 1 이상 k 이하 (소수 허용). 1번 = r 그대로 누적(절사하지 않음), 추출번호만 소수 절사. 이후: 이전 누적값 + k → 소수 둘째 반올림 → 절사 = 추출번호.
+  </div>
+
+</div>
+
+<script>
+  const totalEl = document.getElementById('total');
+  const countEl = document.getElementById('count');
+  const startEl = document.getElementById('start');
+  const formulaEl = document.getElementById('formula-display');
+  const errorEl  = document.getElementById('error-msg');
+  const resultsSection = document.getElementById('results');
+
+  // 작물 선택
+  let selectedCrop = '마늘';
+  document.querySelectorAll('.crop-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.crop-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedCrop = btn.dataset.crop;
+    });
+  });
+
+  function updateFormula() {
+    const N = parseInt(totalEl.value);
+    const n = parseInt(countEl.value);
+    const hintEl = document.getElementById('start-hint');
+    if (N > 0 && n > 0) {
+      const kRaw = N / n;
+      const k = Math.round(kRaw * 10) / 10;
+      formulaEl.innerHTML = `${N} ÷ ${n} = ${kRaw.toFixed(4)} &nbsp;→&nbsp; 소수 둘째 자리 반올림 &nbsp;→&nbsp; <b>k = ${k.toFixed(1)}</b> &nbsp;&nbsp;(시작난수 범위: 1 ~ ${k.toFixed(1)})`;
+      hintEl.textContent = `유효범위: 1 ~ ${k.toFixed(1)}`;
+    } else {
+      formulaEl.innerHTML = `N ÷ n = <b>?</b> &nbsp;(소수 둘째 자리 반올림 → 첫째 자리까지)`;
+      hintEl.textContent = `1 이상, 추출간격 이하`;
+    }
+  }
+
+  [totalEl, countEl, startEl].forEach(el => el.addEventListener('input', updateFormula));
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.classList.add('visible');
+    [totalEl, countEl, startEl].forEach(el => el.classList.remove('error'));
+  }
+
+  function clearError() {
+    errorEl.textContent = '';
+    errorEl.classList.remove('visible');
+    [totalEl, countEl, startEl].forEach(el => el.classList.remove('error'));
+  }
+
+  // 소수 둘째 자리에서 반올림 → 소수 첫째 자리
+  function round1(v) { return Math.round(v * 10) / 10; }
+  // 항상 소수 첫째 자리까지 표시
+  function disp1(v) { return v.toFixed(1); }
+
+  function extract() {
+    clearError();
+
+    const N = parseInt(totalEl.value);
+    const n = parseInt(countEl.value);
+    const r = parseFloat(startEl.value);  // 시작난수: 소수 허용 (예: 7.8)
+
+    if (!N || N < 1) { totalEl.classList.add('error'); showError('전체 개수(N)를 1 이상 입력해주세요.'); return; }
+    if (!n || n < 1) { countEl.classList.add('error'); showError('추출 개수(n)를 1 이상 입력해주세요.'); return; }
+    if (n > N)       { countEl.classList.add('error'); showError('추출 개수(n)는 전체 개수(N)보다 작거나 같아야 합니다.'); return; }
+
+    // 추출간격: 소수 둘째 자리에서 반올림 → 첫째 자리까지
+    const kRaw = N / n;
+    const k = round1(kRaw);
+
+    // 시작난수 유효범위: 1 이상, 추출간격 k 이하
+    if (isNaN(r) || r < 1) { startEl.classList.add('error'); showError(`시작 난수는 1 이상이어야 합니다.`); return; }
+    if (r > k)             { startEl.classList.add('error'); showError(`시작 난수는 추출간격 k(${disp1(k)}) 이하여야 합니다.`); return; }
+
+    // 누적 계산:
+    //   1번: acc = r 그대로 (소수이면 소수 그대로 유지, 절사하지 않음)
+    //        추출번호 = Math.floor(r)  ← 재료 위치만 절사
+    //   2번~: acc_new = round1(acc_prev + k)  (소수 둘째 반올림 → 첫째 자리)
+    //         추출번호 = Math.floor(acc_new)
+    const samples = [];
+    let acc = r;
+    for (let i = 0; i < n; i++) {
+      const num = Math.floor(acc);
+      if (num > N) break;
+      samples.push({ num, acc });
+      acc = round1(acc + k);
+    }
+
+    renderResults(samples, { N, n, r, k, kRaw });
+  }
+
+  function renderResults(samples, { N, n, r, k, kRaw }) {
+    const address = document.getElementById('address').value.trim();
+    document.getElementById('results-title').textContent =
+      `${selectedCrop} 생산조사 — 추출 결과 (${samples.length}개)`;
+    const meta = document.getElementById('results-meta');
+
+    meta.innerHTML = `
+      <span class="meta-chip">작물: ${selectedCrop}</span>
+      <span class="meta-chip">N = ${N}</span>
+      <span class="meta-chip">n = ${n}</span>
+      <span class="meta-chip">k = ${disp1(k)}&nbsp;(${N}÷${n}=${kRaw.toFixed(4)}→반올림)</span>
+      <span class="meta-chip">r = ${disp1(r)}</span>
+      ${address ? `<span class="meta-chip" style="background:var(--field-pale);border-color:var(--field);color:var(--field);">📍 ${address}</span>` : ''}
+    `;
+
+    // Number grid
+    const grid = document.getElementById('number-grid');
+    grid.innerHTML = '';
+    samples.forEach(({ num }, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'num-cell' + (i === 0 ? ' start-cell' : '');
+      cell.textContent = num;
+      cell.style.animationDelay = `${i * 40}ms`;
+      cell.title = `제${i+1}번 표본`;
+      grid.appendChild(cell);
+    });
+
+    // Table
+    const tbody = document.getElementById('result-tbody');
+    tbody.innerHTML = '';
+
+    samples.forEach(({ num, acc }, i) => {
+      const tr = document.createElement('tr');
+      let formula;
+
+      if (i === 0) {
+        // 1번: 시작난수 r → 소수 첫째 자리 표기(r.0) → 절사 = r
+        formula = `시작난수 &nbsp;<b>${disp1(r)}</b>&nbsp; → 절사 = <b>${num}</b>`;
+      } else {
+        const prevAcc  = samples[i - 1].acc;           // 이전 단계 누적값 (소수 첫째)
+        const sumExact = prevAcc + k;                   // 더한 원시값
+        const sumR1    = round1(sumExact);              // 소수 둘째 반올림 결과 = acc
+        // sumExact 와 sumR1 이 같으면 반올림 표시 생략
+        const needRound = disp1(sumExact) !== disp1(sumR1);
+        if (needRound) {
+          formula = `${disp1(prevAcc)} + ${disp1(k)} = ${disp1(sumExact)}&nbsp;→&nbsp;반올림 ${disp1(sumR1)}&nbsp;→&nbsp;절사 = <b>${num}</b>`;
+        } else {
+          formula = `${disp1(prevAcc)} + ${disp1(k)} = ${disp1(sumR1)}&nbsp;→&nbsp;절사 = <b>${num}</b>`;
+        }
+      }
+
+      tr.innerHTML = `
+        <td class="idx">${i + 1}</td>
+        <td class="num ${i === 0 ? 'start' : ''}">${num}${i === 0 ? '<span class="start-tag">시작</span>' : ''}</td>
+        <td class="formula-cell">${formula}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    resultsSection.classList.add('visible');
+    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function copyResults() {
+    const rows = document.querySelectorAll('#result-tbody tr');
+    const lines = ['순번\t추출번호\t계산식'];
+    rows.forEach((tr, i) => {
+      const cells = tr.querySelectorAll('td');
+      lines.push(`${cells[0].textContent}\t${cells[1].textContent.replace('시작','').trim()}\t${cells[2].textContent}`);
+    });
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✓ 복사 완료!';
+      setTimeout(() => {
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 번호 목록 복사`;
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
