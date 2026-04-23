@@ -2,841 +2,712 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>계통추출기 — 농산물 생산조사</title>
-<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --ink: #1a1a18;
-    --paper: #f5f0e8;
-    --field: #4a7c3f;
-    --field-light: #7ab870;
-    --field-pale: #d4e8d0;
-    --accent: #c8821a;
-    --accent-pale: #f5e4c8;
-    --rule: #c8bfaa;
-    --mono: 'IBM Plex Mono', monospace;
-    --serif: 'Nanum Myeongjo', serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--serif);
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
-  }
-
-  /* Texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,0.03) 28px, rgba(0,0,0,0.03) 29px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* Field pattern background */
-  body::after {
-    content: '';
-    position: fixed;
-    top: -50%;
-    right: -20%;
-    width: 60vw;
-    height: 160vh;
-    background: repeating-linear-gradient(
-      -35deg,
-      transparent,
-      transparent 18px,
-      rgba(74,124,63,0.06) 18px,
-      rgba(74,124,63,0.06) 20px
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 48px 32px 80px;
-  }
-
-  /* Header */
-  header {
-    margin-bottom: 48px;
-    border-bottom: 3px solid var(--ink);
-    padding-bottom: 24px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .header-left {}
-
-  .eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--field);
-    margin-bottom: 8px;
-  }
-
-  h1 {
-    font-size: clamp(28px, 5vw, 44px);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  h1 span {
-    color: var(--field);
-  }
-
-  .header-badge {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    border: 1.5px solid var(--accent);
-    padding: 6px 12px;
-    letter-spacing: 0.1em;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .badge-dot {
-    width: 7px;
-    height: 7px;
-    background: var(--accent);
-    border-radius: 50%;
-  }
-
-  /* Form section */
-  .form-card {
-    background: white;
-    border: 2px solid var(--ink);
-    padding: 36px;
-    margin-bottom: 32px;
-    position: relative;
-    box-shadow: 5px 5px 0 var(--ink);
-  }
-
-  .form-card::before {
-    content: '입력값';
-    position: absolute;
-    top: -12px;
-    left: 20px;
-    background: var(--field);
-    color: white;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    padding: 3px 10px;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    margin-bottom: 28px;
-  }
-
-  @media (max-width: 600px) {
-    .form-grid { grid-template-columns: 1fr; }
-  }
-
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  label {
-    font-size: 12px;
-    font-family: var(--mono);
-    letter-spacing: 0.08em;
-    color: #555;
-    text-transform: uppercase;
-  }
-
-  label em {
-    font-style: normal;
-    color: var(--accent);
-    margin-left: 4px;
-  }
-
-  input[type="number"] {
-    font-family: var(--mono);
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--ink);
-    border: none;
-    border-bottom: 2px solid var(--rule);
-    background: transparent;
-    padding: 8px 0;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s;
-    -moz-appearance: textfield;
-  }
-
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-  input[type="number"]:focus {
-    border-bottom-color: var(--field);
-  }
-
-  input[type="number"].error {
-    border-bottom-color: #c0392b;
-    color: #c0392b;
-  }
-
-  .field-hint {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: #999;
-    margin-top: 2px;
-  }
-
-  /* Formula display */
-  .formula-bar {
-    background: var(--field-pale);
-    border: 1.5px solid var(--field-light);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-  }
-
-  .formula-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--field);
-    letter-spacing: 0.1em;
-    flex-shrink: 0;
-  }
-
-  .formula-expr {
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--ink);
-    flex: 1;
-  }
-
-  .formula-expr b {
-    color: var(--field);
-  }
-
-  /* Error */
-  .error-msg {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: #c0392b;
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    border-left: 3px solid #c0392b;
-    background: #fdf0ee;
-    display: none;
-  }
-  .error-msg.visible { display: block; }
-
-  /* Button */
-  .btn-extract {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--field);
-    color: white;
-    border: 2px solid var(--ink);
-    padding: 14px 32px;
-    font-family: var(--mono);
-    font-size: 14px;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    box-shadow: 4px 4px 0 var(--ink);
-    transition: transform 0.1s, box-shadow 0.1s;
-    font-weight: 600;
-  }
-
-  .btn-extract:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 var(--ink);
-  }
-
-  .btn-extract:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--ink);
-  }
-
-  .btn-extract svg { flex-shrink: 0; }
-
-  /* Results section */
-  .results-section {
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.4s, transform 0.4s;
-    pointer-events: none;
-  }
-
-  .results-section.visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  .results-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .results-title {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .results-meta {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .meta-chip {
-    font-family: var(--mono);
-    font-size: 11px;
-    background: var(--accent-pale);
-    border: 1.5px solid var(--accent);
-    color: var(--accent);
-    padding: 4px 10px;
-    letter-spacing: 0.08em;
-  }
-
-  /* Number grid */
-  .number-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 32px;
-  }
-
-  .num-cell {
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 600;
-    width: 60px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--rule);
-    background: white;
-    color: var(--ink);
-    position: relative;
-    transition: all 0.15s;
-    animation: popIn 0.3s ease backwards;
-  }
-
-  .num-cell.start-cell {
-    background: var(--field);
-    color: white;
-    border-color: var(--field);
-  }
-
-  .num-cell:hover {
-    border-color: var(--field);
-    transform: translateY(-2px);
-    box-shadow: 0 3px 0 var(--field);
-  }
-
-  @keyframes popIn {
-    from { opacity: 0; transform: scale(0.8); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-
-  /* Table */
-  .result-table-wrap {
-    overflow-x: auto;
-    border: 2px solid var(--ink);
-    box-shadow: 4px 4px 0 var(--ink);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-
-  thead {
-    background: var(--ink);
-    color: var(--paper);
-  }
-
-  thead th {
-    padding: 12px 16px;
-    text-align: left;
-    letter-spacing: 0.08em;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  tbody tr {
-    border-bottom: 1px solid var(--rule);
-    transition: background 0.15s;
-  }
-
-  tbody tr:last-child { border-bottom: none; }
-
-  tbody tr:hover { background: var(--field-pale); }
-
-  tbody td {
-    padding: 11px 16px;
-    vertical-align: middle;
-  }
-
-  td.idx { color: #999; font-size: 12px; }
-
-  td.num {
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--field);
-  }
-
-  td.num.start { color: var(--accent); }
-
-  td.formula-cell { color: #666; font-size: 12px; }
-
-  .start-tag {
-    display: inline-block;
-    font-family: var(--mono);
-    font-size: 9px;
-    background: var(--accent);
-    color: white;
-    padding: 2px 5px;
-    letter-spacing: 0.1em;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-
-  /* Copy button */
-  .btn-copy {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    border: 2px solid var(--ink);
-    padding: 10px 20px;
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    box-shadow: 3px 3px 0 var(--ink);
-    transition: all 0.1s;
-    margin-top: 16px;
-  }
-
-  .btn-copy:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
-  .btn-copy:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--ink); }
-
-  /* Address row */
-  .address-row {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .address-row label {
-    font-size: 12px;
-    font-family: var(--mono);
-    letter-spacing: 0.08em;
-    color: #555;
-    text-transform: uppercase;
-  }
-
-  input[type="text"]#address {
-    font-family: var(--serif);
-    font-size: 15px;
-    color: var(--ink);
-    border: 1.5px solid var(--rule);
-    border-radius: 0;
-    background: var(--field-pale);
-    padding: 12px 14px;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s, background 0.2s;
-    letter-spacing: 0.02em;
-  }
-
-  input[type="text"]#address::placeholder {
-    color: #aaa;
-    font-size: 13px;
-    font-family: var(--mono);
-    letter-spacing: 0.04em;
-  }
-
-  input[type="text"]#address:focus {
-    border-color: var(--field);
-    background: white;
-  }
-
-  /* Crop selector */
-  .crop-row {
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .crop-row label {
-    font-size: 12px;
-    font-family: var(--mono);
-    letter-spacing: 0.08em;
-    color: #555;
-    text-transform: uppercase;
-  }
-
-  .crop-btns {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .crop-btn {
-    font-family: var(--serif);
-    font-size: 14px;
-    padding: 8px 18px;
-    border: 2px solid var(--rule);
-    background: white;
-    color: var(--ink);
-    cursor: pointer;
-    transition: all 0.15s;
-    box-shadow: 2px 2px 0 var(--rule);
-    letter-spacing: 0.02em;
-  }
-
-  .crop-btn:hover {
-    border-color: var(--field);
-    color: var(--field);
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 var(--field);
-  }
-
-  .crop-btn.active {
-    background: var(--field);
-    color: white;
-    border-color: var(--field);
-    box-shadow: 2px 2px 0 var(--ink);
-  }
-
-  /* Footer note */
-  .foot-note {
-    margin-top: 48px;
-    padding-top: 20px;
-    border-top: 1px solid var(--rule);
-    font-size: 12px;
-    font-family: var(--mono);
-    color: #aaa;
-    letter-spacing: 0.05em;
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .foot-note::before {
-    content: '※';
-    color: var(--field);
-    flex-shrink: 0;
-  }
+:root {
+  --green:  #2d7a3a;
+  --glight: #e8f5e9;
+  --gmid:   #a5d6a7;
+  --red:    #c62828;
+  --rlight: #ffebee;
+  --blue:   #1565c0;
+  --blight: #e3f2fd;
+  --amber:  #e65100;
+  --alight: #fff3e0;
+  --ink:    #1a1a18;
+  --ink2:   #555;
+  --paper:  #f4f4ef;
+  --card:   #ffffff;
+  --border: #e0ddd5;
+  --radius: 14px;
+  --sans:   'Noto Sans KR', sans-serif;
+  --mono:   'IBM Plex Mono', monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  padding-bottom: 56px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.hdr {
+  background: var(--green);
+  color: white;
+  padding: 14px 16px 12px;
+  position: sticky; top:0; z-index:100;
+  box-shadow: 0 2px 10px rgba(0,0,0,.22);
+}
+.hdr h1 { font-size:18px; font-weight:900; letter-spacing:-.02em; }
+.hdr-sub { font-size:11px; opacity:.75; margin-top:2px; }
+
+/* ── Card ── */
+.card {
+  margin: 12px 12px 0;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,.07);
+  overflow: hidden;
+}
+.card-head {
+  background: var(--green); color:white;
+  font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  padding: 8px 14px;
+}
+.card-body { padding: 14px 12px; }
+
+/* ── Crop grid ── */
+.crop-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 8px;
+}
+.crop-btn {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding: 12px 4px 10px;
+  border: 2px solid var(--border); border-radius:12px;
+  background: white; cursor:pointer; transition:all .14s;
+  font-family: var(--sans); position:relative;
+}
+.crop-btn .ico  { font-size:26px; line-height:1; }
+.crop-btn .name { font-size:13px; font-weight:700; color:var(--ink2); }
+.crop-btn .cnt  { font-size:10px; font-family:var(--mono); color:#bbb; }
+.crop-btn.active { border-color:var(--green); background:var(--glight); }
+.crop-btn.active .name { color:var(--green); }
+.crop-btn.active .cnt  { color:var(--green); font-weight:600; }
+.crop-btn.active::after {
+  content:'✓'; position:absolute; top:5px; right:7px;
+  font-size:10px; color:var(--green); font-weight:900;
+}
+
+/* ── Address ── */
+.addr-input {
+  width:100%; font-family:var(--sans); font-size:15px;
+  padding:13px 14px; border:1.5px solid var(--border); border-radius:10px;
+  background:#fafaf7; outline:none; color:var(--ink);
+  transition: border-color .2s;
+}
+.addr-input:focus { border-color:var(--green); background:white; }
+.addr-input::placeholder { color:#bbb; font-size:13px; }
+
+/* ── Port buttons ── */
+.port-row { display:flex; gap:10px; margin-top:12px; }
+.port-btn {
+  flex:1; padding:13px 8px 11px;
+  border:2px solid var(--border); border-radius:10px;
+  background:white; font-family:var(--sans);
+  font-size:15px; font-weight:700; color:var(--ink2);
+  cursor:pointer; transition:all .14s; text-align:center;
+}
+.port-btn small { display:block; font-size:10px; font-weight:400; opacity:.6; margin-top:2px; }
+.port-btn.active { border-color:var(--blue); background:var(--blight); color:var(--blue); }
+.port-btn.active small { opacity:1; font-weight:600; }
+
+/* ── Input row ── */
+.input-row { display:flex; gap:9px; }
+.ig { flex:1; display:flex; flex-direction:column; gap:5px; }
+.ig-label {
+  font-size:10px; font-weight:700; color:var(--ink2);
+  letter-spacing:.05em; text-transform:uppercase; text-align:center;
+}
+.ig-label em { font-style:normal; font-family:var(--mono); font-size:12px; font-weight:600; }
+.ig-label em.blue { color:var(--blue); }
+.ig-label em.red  { color:var(--red);  }
+
+.num-input {
+  width:100%; font-family:var(--mono); font-size:22px; font-weight:700;
+  padding:10px 6px; border:2px solid var(--border); border-radius:10px;
+  background:white; outline:none; text-align:center;
+  -moz-appearance:textfield; transition:border-color .2s;
+}
+.num-input::-webkit-inner-spin-button,
+.num-input::-webkit-outer-spin-button { -webkit-appearance:none; }
+.num-input:focus { border-color:var(--green); }
+.num-input.blue { color:var(--blue); }
+.num-input.red  { color:var(--red);  }
+.num-input.err  { border-color:#e53935; }
+.num-input.blue::placeholder { color:#90caf9; font-size:14px; }
+.num-input.red::placeholder  { color:#ef9a9a; font-size:14px; }
+
+.ig-hint { font-size:10px; color:#bbb; font-family:var(--mono); text-align:center; min-height:13px; }
+.ig-hint.ok { color:var(--green); font-weight:600; }
+.ig-hint.blue { color:var(--blue); }
+.ig-hint.red  { color:var(--red);  }
+
+/* ── Formula bar ── */
+.formula-bar {
+  margin-top:14px;
+  background:var(--glight); border:1.5px solid var(--gmid); border-radius:10px;
+  padding:11px 14px; font-family:var(--mono); font-size:12px; color:#333; line-height:1.7;
+}
+.formula-bar b { color:var(--green); font-size:15px; }
+
+/* ── Error ── */
+.err-box {
+  display:none; margin-top:11px;
+  background:var(--rlight); border:1.5px solid #ef9a9a; border-radius:10px;
+  padding:11px 14px; font-size:13px; color:var(--red);
+}
+.err-box.show { display:block; }
+
+/* ── Button row ── */
+.btn-row { display:flex; gap:10px; margin-top:14px; }
+
+.run-btn {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:9px;
+  padding:16px 10px; background:var(--green); color:white;
+  border:none; border-radius:12px; font-family:var(--sans);
+  font-size:15px; font-weight:800; cursor:pointer;
+  box-shadow:0 4px 14px rgba(45,122,58,.38); transition:all .14s;
+  letter-spacing:.01em;
+}
+.run-btn:active { transform:scale(.97); box-shadow:none; }
+
+.reset-btn {
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  padding:16px 14px; background:white; color:var(--red);
+  border:2px solid var(--red); border-radius:12px; font-family:var(--sans);
+  font-size:14px; font-weight:700; cursor:pointer;
+  transition:all .14s; white-space:nowrap;
+}
+.reset-btn:active { background:var(--rlight); }
+
+/* ── Results ── */
+.results { display:none; }
+.results.show { display:block; }
+
+.res-info {
+  margin:14px 12px 0;
+  background:var(--green); border-radius:var(--radius);
+  padding:16px 14px; color:white;
+}
+.res-title { font-size:16px; font-weight:900; margin-bottom:10px; letter-spacing:-.01em; }
+.res-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip {
+  background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3);
+  border-radius:20px; padding:4px 10px;
+  font-size:11px; font-family:var(--mono); font-weight:600;
+}
+.chip.big { font-family:var(--sans); font-size:12px; background:rgba(255,255,255,.26); }
+
+/* ── Num grid (10-row groups) ── */
+.grid-card {
+  margin:12px 12px 0; background:var(--card);
+  border-radius:var(--radius); box-shadow:0 2px 10px rgba(0,0,0,.07);
+  padding:14px 12px;
+}
+.grid-title { font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:10px; }
+
+.num-group { margin-bottom:12px; }
+.num-group:last-child { margin-bottom:0; }
+.group-label {
+  font-family:var(--mono); font-size:10px; font-weight:600;
+  color:var(--blue); margin-bottom:6px; letter-spacing:.05em;
+  padding:2px 6px; background:var(--blight); border-radius:4px; display:inline-block;
+}
+.num-cells { display:flex; flex-wrap:wrap; gap:7px; }
+
+.ncell {
+  width:50px; height:38px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; border:1.5px solid var(--border);
+  font-family:var(--mono); font-size:14px; font-weight:700;
+  background:white; color:var(--ink);
+  animation:pop .22s ease backwards;
+}
+.ncell.first { background:var(--amber); border-color:var(--amber); color:white; }
+@keyframes pop { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
+
+/* ── Detail table ── */
+.tbl-card {
+  margin:12px 12px 0; background:var(--card);
+  border-radius:var(--radius); box-shadow:0 2px 10px rgba(0,0,0,.07);
+  overflow:hidden;
+}
+.tbl-head {
+  display:grid; grid-template-columns:36px 58px 1fr;
+  background:var(--ink); color:white;
+  font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+}
+.tbl-head > div { padding:9px 8px; }
+.tbl-group-sep {
+  display:grid; grid-template-columns:36px 58px 1fr;
+  background:var(--blight); border-bottom:1px solid var(--gmid);
+}
+.tbl-group-sep .glabel {
+  grid-column:1/-1; padding:5px 10px;
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  color:var(--blue); letter-spacing:.06em;
+}
+.tbl-row {
+  display:grid; grid-template-columns:36px 58px 1fr;
+  border-bottom:1px solid var(--border);
+}
+.tbl-row:last-child { border-bottom:none; }
+.tbl-row.fr { background:#fffde7; }
+.tbl-row > div { padding:9px 8px; }
+.c-idx { font-family:var(--mono); font-size:11px; color:#bbb; display:flex; align-items:center; }
+.c-num {
+  font-family:var(--mono); font-size:18px; font-weight:700; color:var(--green);
+  display:flex; align-items:center; gap:3px; flex-wrap:wrap;
+}
+.c-num.fr { color:var(--amber); }
+.stag { font-size:9px; background:var(--amber); color:white; border-radius:4px; padding:1px 4px; font-weight:700; font-family:var(--sans); }
+.c-formula {
+  font-family:var(--mono); font-size:11px; color:#555;
+  display:flex; align-items:center; flex-wrap:wrap; line-height:1.55;
+}
+.c-formula b { color:var(--green); font-size:13px; }
+.c-formula.fr b { color:var(--amber); }
+
+/* ── Copy btn ── */
+.copy-btn {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:calc(100% - 24px); margin:12px 12px 0;
+  padding:14px; background:white; border:2px solid var(--ink); border-radius:12px;
+  font-family:var(--sans); font-size:13px; font-weight:700;
+  cursor:pointer; transition:background .14s;
+}
+.copy-btn:active { background:var(--glight); }
+
+/* ── Footnote ── */
+.foot {
+  margin:16px 12px 0; padding:12px 14px; background:white;
+  border-radius:10px; border-left:3px solid var(--gmid);
+  font-size:11px; color:#999; line-height:1.75;
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <header>
-    <div class="header-left">
-      <div class="eyebrow">농산물 생산조사 도구</div>
-      <h1>계통<span>추출기</span></h1>
+<div class="hdr">
+  <h1>📋 계통추출기</h1>
+  <div class="hdr-sub">농산물 생산조사 · Systematic Sampling</div>
+</div>
+
+<!-- ① 작물 선택 -->
+<div class="card">
+  <div class="card-head">① 작물 선택</div>
+  <div class="card-body">
+    <div class="crop-grid">
+      <button class="crop-btn active" data-crop="마늘" data-count="20">
+        <span class="ico">🧄</span><span class="name">마늘</span><span class="cnt">20개</span>
+      </button>
+      <button class="crop-btn" data-crop="양파" data-count="20">
+        <span class="ico">🧅</span><span class="name">양파</span><span class="cnt">20개</span>
+      </button>
+      <button class="crop-btn" data-crop="배추" data-count="6">
+        <span class="ico">🥬</span><span class="name">배추</span><span class="cnt">6개</span>
+      </button>
+      <button class="crop-btn" data-crop="무" data-count="10">
+        <span class="ico" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- 무 잎 3장 -->
+            <path d="M10 11 Q7 7 9 3 Q11 7 13 9" fill="#43a047" stroke="#388e3c" stroke-width="0.5"/>
+            <path d="M16 10 Q14 5 16 2 Q18 5 16 10" fill="#66bb6a" stroke="#388e3c" stroke-width="0.5"/>
+            <path d="M22 11 Q25 7 23 3 Q21 7 19 9" fill="#43a047" stroke="#388e3c" stroke-width="0.5"/>
+            <!-- 줄기 -->
+            <line x1="11" y1="9" x2="15" y2="12" stroke="#388e3c" stroke-width="1.2"/>
+            <line x1="16" y1="10" x2="16" y2="12" stroke="#388e3c" stroke-width="1.2"/>
+            <line x1="21" y1="9" x2="17" y2="12" stroke="#388e3c" stroke-width="1.2"/>
+            <!-- 무 몸통: 흰색 큰 타원 -->
+            <ellipse cx="16" cy="21" rx="6.5" ry="9" fill="#f5f5f5" stroke="#9e9e9e" stroke-width="1.2"/>
+            <!-- 무 결선 (수평) -->
+            <line x1="10.5" y1="17" x2="21.5" y2="17" stroke="#e0e0e0" stroke-width="0.7"/>
+            <line x1="9.8"  y1="21" x2="22.2" y2="21" stroke="#e0e0e0" stroke-width="0.7"/>
+            <line x1="10.5" y1="25" x2="21.5" y2="25" stroke="#e0e0e0" stroke-width="0.7"/>
+            <!-- 아래 뿌리 -->
+            <line x1="16" y1="30" x2="16" y2="32" stroke="#9e9e9e" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="name">무</span><span class="cnt">10개</span>
+      </button>
+      <button class="crop-btn" data-crop="총각무" data-count="20">
+        <span class="ico" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- 총각무 잎 (길고 좁은 4장) -->
+            <path d="M11 13 Q7 9 8 4 Q11 8 13 12" fill="#43a047" stroke="#2e7d32" stroke-width="0.5"/>
+            <path d="M14 12 Q12 6 14 2 Q16 6 15 12" fill="#66bb6a" stroke="#2e7d32" stroke-width="0.5"/>
+            <path d="M18 12 Q20 6 18 2 Q20 6 19 12" fill="#66bb6a" stroke="#2e7d32" stroke-width="0.5"/>
+            <path d="M21 13 Q25 9 24 4 Q21 8 19 12" fill="#43a047" stroke="#2e7d32" stroke-width="0.5"/>
+            <!-- 줄기 수렴 -->
+            <line x1="12" y1="12" x2="15.5" y2="14" stroke="#388e3c" stroke-width="1"/>
+            <line x1="14.5" y1="12" x2="15.8" y2="14" stroke="#388e3c" stroke-width="1"/>
+            <line x1="17.5" y1="12" x2="16.2" y2="14" stroke="#388e3c" stroke-width="1"/>
+            <line x1="20" y1="12" x2="16.5" y2="14" stroke="#388e3c" stroke-width="1"/>
+            <!-- 총각무 몸통: 작고 둥글고 흰색 -->
+            <ellipse cx="16" cy="22" rx="5.5" ry="7.5" fill="#f5f5f5" stroke="#9e9e9e" stroke-width="1.2"/>
+            <!-- 결선 -->
+            <line x1="10.8" y1="19" x2="21.2" y2="19" stroke="#e0e0e0" stroke-width="0.7"/>
+            <line x1="10.5" y1="22.5" x2="21.5" y2="22.5" stroke="#e0e0e0" stroke-width="0.7"/>
+            <line x1="11" y1="26" x2="21" y2="26" stroke="#e0e0e0" stroke-width="0.7"/>
+            <!-- 뿌리 여러 가닥 -->
+            <line x1="14.5" y1="29.5" x2="14" y2="32" stroke="#9e9e9e" stroke-width="1" stroke-linecap="round"/>
+            <line x1="16"   y1="29.5" x2="16" y2="32" stroke="#9e9e9e" stroke-width="1.2" stroke-linecap="round"/>
+            <line x1="17.5" y1="29.5" x2="18" y2="32" stroke="#9e9e9e" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="name">총각무</span><span class="cnt">20개</span>
+      </button>
     </div>
-    <div class="header-badge">
-      <div class="badge-dot"></div>
-      마늘 · 양파 · 무 · 배추
+  </div>
+</div>
+
+<!-- ② 조사 주소·포구 -->
+<div class="card">
+  <div class="card-head">② 조사 주소 · 포구</div>
+  <div class="card-body">
+    <input type="text" id="address" class="addr-input"
+      placeholder="주소를 입력하고 캡처해서 저장하세요.">
+    <div class="port-row">
+      <button class="port-btn active" data-port="A">
+        A 포구<small>선택됨</small>
+      </button>
+      <button class="port-btn" data-port="B">
+        B 포구<small>누르면 선택</small>
+      </button>
     </div>
-  </header>
+  </div>
+</div>
 
-  <div class="form-card">
-
-    <div class="address-row">
-      <label>조사 주소</label>
-      <input type="text" id="address" placeholder="주소를 입력하고 캡처해서 저장하세요.">
-    </div>
-
-    <div class="crop-row">
-      <label>작물 선택</label>
-      <div class="crop-btns">
-        <button class="crop-btn active" data-crop="마늘">🧄 마늘</button>
-        <button class="crop-btn" data-crop="양파">🧅 양파</button>
-        <button class="crop-btn" data-crop="무">🌿 무</button>
-        <button class="crop-btn" data-crop="배추">🥬 배추</button>
+<!-- ③ 추출 설정 -->
+<div class="card">
+  <div class="card-head">③ 추출 설정</div>
+  <div class="card-body">
+    <div class="input-row">
+      <div class="ig">
+        <div class="ig-label">전체 <em class="blue">N</em></div>
+        <input type="number" id="total" class="num-input blue"
+          placeholder="예)120" min="1" inputmode="numeric">
+        <div class="ig-hint blue">전체 개수</div>
+      </div>
+      <div class="ig">
+        <div class="ig-label">추출 <em class="blue">n</em></div>
+        <input type="number" id="count" class="num-input blue"
+          placeholder="20" min="1" inputmode="numeric" value="20">
+        <div class="ig-hint ok" id="count-hint">마늘 기본값</div>
+      </div>
+      <div class="ig">
+        <div class="ig-label">난수 <em class="red">r</em></div>
+        <input type="number" id="start" class="num-input red"
+          placeholder="예)1.2" min="0.1" step="0.1" inputmode="decimal">
+        <div class="ig-hint red" id="start-hint">1 이상 k 이하</div>
       </div>
     </div>
 
-    <div class="form-grid">
-      <div class="field-group">
-        <label>전체 개수<em>N</em></label>
-        <input type="number" id="total" placeholder="예) 120" min="1">
-        <div class="field-hint">모집단 전체 필지 수</div>
-      </div>
-      <div class="field-group">
-        <label>추출 개수<em>n</em></label>
-        <input type="number" id="count" placeholder="예) 10" min="1">
-        <div class="field-hint">표본으로 뽑을 수</div>
-      </div>
-      <div class="field-group">
-        <label>시작 난수<em>r</em></label>
-        <input type="number" id="start" placeholder="예) 7.8" min="0.1" step="0.1">
-        <div class="field-hint" id="start-hint">1 이상, 추출간격 이하</div>
-      </div>
+    <div class="formula-bar" id="formula-bar">
+      추출간격 k = N ÷ n = <b>?</b>
     </div>
 
-    <div class="formula-bar">
-      <span class="formula-label">추출 간격 k =</span>
-      <span class="formula-expr" id="formula-display">
-        N ÷ n = <b>?</b>
-      </span>
+    <div class="err-box" id="err-box"></div>
+
+    <div class="btn-row">
+      <button class="run-btn" onclick="extract()">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        계통추출 실행
+      </button>
+      <button class="reset-btn" onclick="resetAll()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+        </svg>
+        초기화
+      </button>
     </div>
+  </div>
+</div>
 
-    <div class="error-msg" id="error-msg"></div>
+<!-- ④ 결과 -->
+<div class="results" id="results">
 
-    <button class="btn-extract" onclick="extract()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      계통추출 실행
-    </button>
+  <div class="res-info">
+    <div class="res-title" id="res-title"></div>
+    <div class="res-chips" id="res-chips"></div>
   </div>
 
-  <div class="results-section" id="results">
-    <div class="results-header">
-      <div class="results-title" id="results-title">추출 결과</div>
-      <div class="results-meta" id="results-meta"></div>
-    </div>
-
-    <div class="number-grid" id="number-grid"></div>
-
-    <div class="result-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>순번</th>
-            <th>추출번호</th>
-            <th>계산식</th>
-          </tr>
-        </thead>
-        <tbody id="result-tbody"></tbody>
-      </table>
-    </div>
-
-    <button class="btn-copy" onclick="copyResults()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-      </svg>
-      번호 목록 복사
-    </button>
+  <div class="grid-card">
+    <div class="grid-title">▶ 추출 번호 목록</div>
+    <div id="num-groups"></div>
   </div>
 
-  <div class="foot-note">
-    계통추출(Systematic Sampling): 추출간격 k = N÷n (소수 둘째 자리 반올림, 첫째 자리까지). 시작난수 r: 1 이상 k 이하 (소수 허용). 1번 = r 그대로 누적(절사하지 않음), 추출번호만 소수 절사. 이후: 이전 누적값 + k → 소수 둘째 반올림 → 절사 = 추출번호.
+  <div class="tbl-card">
+    <div class="tbl-head">
+      <div>No.</div><div>번호</div><div>계산식</div>
+    </div>
+    <div id="tbl-rows"></div>
   </div>
 
+  <button class="copy-btn" onclick="copyResults()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="9" y="9" width="13" height="13" rx="2"/>
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+    </svg>
+    번호 목록 복사
+  </button>
+</div>
+
+<div class="foot">
+  ※ 추출간격 k = N÷n (소수 둘째 자리 반올림 → 첫째 자리)<br>
+  시작난수 r: 1 이상 k 이하, 소수 허용 (절사 없이 그대로 누적)<br>
+  2번~: 이전 누적값 + k → 소수 둘째 반올림 → 절사 = 추출번호
 </div>
 
 <script>
-  const totalEl = document.getElementById('total');
-  const countEl = document.getElementById('count');
-  const startEl = document.getElementById('start');
-  const formulaEl = document.getElementById('formula-display');
-  const errorEl  = document.getElementById('error-msg');
-  const resultsSection = document.getElementById('results');
+let selCrop  = '마늘';
+let selCount = 20;
+let selPort  = 'A';
 
-  // 작물 선택
-  let selectedCrop = '마늘';
-  document.querySelectorAll('.crop-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.crop-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedCrop = btn.dataset.crop;
-    });
+/* ── 작물 버튼 ── */
+document.querySelectorAll('.crop-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.crop-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selCrop  = btn.dataset.crop;
+    selCount = parseInt(btn.dataset.count);
+    document.getElementById('count').value = selCount;
+    const hint = document.getElementById('count-hint');
+    hint.textContent = `${selCrop} 기본값`;
+    hint.className = 'ig-hint ok';
+    updateFormula();
   });
+});
 
-  function updateFormula() {
-    const N = parseInt(totalEl.value);
-    const n = parseInt(countEl.value);
-    const hintEl = document.getElementById('start-hint');
-    if (N > 0 && n > 0) {
-      const kRaw = N / n;
-      const k = Math.round(kRaw * 10) / 10;
-      formulaEl.innerHTML = `${N} ÷ ${n} = ${kRaw.toFixed(4)} &nbsp;→&nbsp; 소수 둘째 자리 반올림 &nbsp;→&nbsp; <b>k = ${k.toFixed(1)}</b> &nbsp;&nbsp;(시작난수 범위: 1 ~ ${k.toFixed(1)})`;
-      hintEl.textContent = `유효범위: 1 ~ ${k.toFixed(1)}`;
-    } else {
-      formulaEl.innerHTML = `N ÷ n = <b>?</b> &nbsp;(소수 둘째 자리 반올림 → 첫째 자리까지)`;
-      hintEl.textContent = `1 이상, 추출간격 이하`;
-    }
-  }
+/* ── 포구 버튼 ── */
+document.querySelectorAll('.port-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.port-btn').forEach(b => {
+      b.classList.remove('active');
+      b.querySelector('small').textContent = '누르면 선택';
+    });
+    btn.classList.add('active');
+    btn.querySelector('small').textContent = '선택됨';
+    selPort = btn.dataset.port;
+  });
+});
 
-  [totalEl, countEl, startEl].forEach(el => el.addEventListener('input', updateFormula));
+/* ── 수식 유틸 ── */
+function round1(v) { return Math.round(v * 10) / 10; }
+function disp1(v)  { return v.toFixed(1); }
 
-  function showError(msg) {
-    errorEl.textContent = msg;
-    errorEl.classList.add('visible');
-    [totalEl, countEl, startEl].forEach(el => el.classList.remove('error'));
-  }
-
-  function clearError() {
-    errorEl.textContent = '';
-    errorEl.classList.remove('visible');
-    [totalEl, countEl, startEl].forEach(el => el.classList.remove('error'));
-  }
-
-  // 소수 둘째 자리에서 반올림 → 소수 첫째 자리
-  function round1(v) { return Math.round(v * 10) / 10; }
-  // 항상 소수 첫째 자리까지 표시
-  function disp1(v) { return v.toFixed(1); }
-
-  function extract() {
-    clearError();
-
-    const N = parseInt(totalEl.value);
-    const n = parseInt(countEl.value);
-    const r = parseFloat(startEl.value);  // 시작난수: 소수 허용 (예: 7.8)
-
-    if (!N || N < 1) { totalEl.classList.add('error'); showError('전체 개수(N)를 1 이상 입력해주세요.'); return; }
-    if (!n || n < 1) { countEl.classList.add('error'); showError('추출 개수(n)를 1 이상 입력해주세요.'); return; }
-    if (n > N)       { countEl.classList.add('error'); showError('추출 개수(n)는 전체 개수(N)보다 작거나 같아야 합니다.'); return; }
-
-    // 추출간격: 소수 둘째 자리에서 반올림 → 첫째 자리까지
+/* ── 수식 바 ── */
+function updateFormula() {
+  const N = parseInt(document.getElementById('total').value);
+  const n = parseInt(document.getElementById('count').value);
+  const bar  = document.getElementById('formula-bar');
+  const hint = document.getElementById('start-hint');
+  if (N > 0 && n > 0 && n <= N) {
     const kRaw = N / n;
     const k = round1(kRaw);
+    bar.innerHTML =
+      `${N} ÷ ${n} = ${kRaw.toFixed(4)} &nbsp;→&nbsp; 반올림 &nbsp;→&nbsp; <b>k = ${disp1(k)}</b><br>` +
+      `<span style="font-size:11px;color:#555;">시작난수 유효범위: 1 ~ ${disp1(k)}</span>`;
+    hint.textContent = `1 ~ ${disp1(k)}`;
+    hint.className = 'ig-hint red';
+  } else {
+    bar.innerHTML = `추출간격 k = N ÷ n = <b>?</b>`;
+    hint.textContent = '1 이상 k 이하';
+    hint.className = 'ig-hint red';
+  }
+}
 
-    // 시작난수 유효범위: 1 이상, 추출간격 k 이하
-    if (isNaN(r) || r < 1) { startEl.classList.add('error'); showError(`시작 난수는 1 이상이어야 합니다.`); return; }
-    if (r > k)             { startEl.classList.add('error'); showError(`시작 난수는 추출간격 k(${disp1(k)}) 이하여야 합니다.`); return; }
+['total','count','start'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updateFormula)
+);
 
-    // 누적 계산:
-    //   1번: acc = r 그대로 (소수이면 소수 그대로 유지, 절사하지 않음)
-    //        추출번호 = Math.floor(r)  ← 재료 위치만 절사
-    //   2번~: acc_new = round1(acc_prev + k)  (소수 둘째 반올림 → 첫째 자리)
-    //         추출번호 = Math.floor(acc_new)
-    const samples = [];
-    let acc = r;
-    for (let i = 0; i < n; i++) {
-      const num = Math.floor(acc);
-      if (num > N) break;
-      samples.push({ num, acc });
-      acc = round1(acc + k);
+/* ── 오류 ── */
+function showErr(msg) {
+  const el = document.getElementById('err-box');
+  el.textContent = msg; el.classList.add('show');
+}
+function clearErr() {
+  document.getElementById('err-box').classList.remove('show');
+  ['total','count','start'].forEach(id =>
+    document.getElementById(id).classList.remove('err'));
+}
+
+/* ── 초기화 ── */
+function resetAll() {
+  // 입력값 초기화
+  document.getElementById('total').value = '';
+  document.getElementById('start').value = '';
+  document.getElementById('address').value = '';
+  clearErr();
+
+  // 작물 → 마늘 복원
+  document.querySelectorAll('.crop-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-crop="마늘"]').classList.add('active');
+  selCrop = '마늘'; selCount = 20;
+  document.getElementById('count').value = 20;
+  document.getElementById('count-hint').textContent = '마늘 기본값';
+  document.getElementById('count-hint').className = 'ig-hint ok';
+
+  // 포구 → A 복원
+  document.querySelectorAll('.port-btn').forEach(b => {
+    b.classList.remove('active');
+    b.querySelector('small').textContent = '누르면 선택';
+  });
+  document.querySelector('[data-port="A"]').classList.add('active');
+  document.querySelector('[data-port="A"] small').textContent = '선택됨';
+  selPort = 'A';
+
+  // 결과 숨김
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('formula-bar').innerHTML = '추출간격 k = N ÷ n = <b>?</b>';
+  document.getElementById('start-hint').textContent = '1 이상 k 이하';
+}
+
+/* ── 추출 실행 ── */
+function extract() {
+  clearErr();
+  const N = parseInt(document.getElementById('total').value);
+  const n = parseInt(document.getElementById('count').value);
+  const r = parseFloat(document.getElementById('start').value);
+
+  if (!N || N < 1) { document.getElementById('total').classList.add('err'); showErr('전체 개수(N)를 1 이상 입력하세요.'); return; }
+  if (!n || n < 1) { document.getElementById('count').classList.add('err'); showErr('추출 개수(n)를 1 이상 입력하세요.'); return; }
+  if (n > N)       { document.getElementById('count').classList.add('err'); showErr('추출 개수(n)는 전체 개수(N) 이하여야 합니다.'); return; }
+
+  const kRaw = N / n;
+  const k    = round1(kRaw);
+
+  if (isNaN(r) || r < 1) { document.getElementById('start').classList.add('err'); showErr('시작 난수는 1 이상이어야 합니다.'); return; }
+  if (r > k)             { document.getElementById('start').classList.add('err'); showErr(`시작 난수는 k(${disp1(k)}) 이하여야 합니다.`); return; }
+
+  const samples = [];
+  let acc = r;
+  for (let i = 0; i < n; i++) {
+    const num = Math.floor(acc);
+    if (num > N) break;
+    samples.push({ num, acc });
+    acc = round1(acc + k);
+  }
+
+  renderResults(samples, { N, n, r, k, kRaw });
+}
+
+/* ── 결과 렌더링 ── */
+function renderResults(samples, { N, n, r, k, kRaw }) {
+  const address = document.getElementById('address').value.trim();
+
+  // 제목·칩
+  document.getElementById('res-title').textContent =
+    `${selCrop} 생산조사 — ${samples.length}개 추출`;
+  document.getElementById('res-chips').innerHTML =
+    `<span class="chip big">🌾 ${selCrop}</span>` +
+    `<span class="chip big">⚓ ${selPort}포구</span>` +
+    (address ? `<span class="chip big">📍 ${address}</span>` : '') +
+    `<span class="chip">N=${N}</span>` +
+    `<span class="chip">n=${n}</span>` +
+    `<span class="chip">k=${disp1(k)}</span>` +
+    `<span class="chip">r=${disp1(r)}</span>`;
+
+  /* ── 번호 격자: 10개씩 그룹 ── */
+  const numGroups = document.getElementById('num-groups');
+  numGroups.innerHTML = '';
+  const CHUNK = 10;
+  for (let g = 0; g < samples.length; g += CHUNK) {
+    const chunk = samples.slice(g, g + CHUNK);
+    const start = g + 1;
+    const end   = Math.min(g + CHUNK, samples.length);
+
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'num-group';
+
+    const label = document.createElement('div');
+    label.className = 'group-label';
+    label.textContent = `${start}번 ~ ${end}번`;
+    groupDiv.appendChild(label);
+
+    const cellsDiv = document.createElement('div');
+    cellsDiv.className = 'num-cells';
+    chunk.forEach(({ num }, ci) => {
+      const c = document.createElement('div');
+      c.className = 'ncell' + (g === 0 && ci === 0 ? ' first' : '');
+      c.textContent = num;
+      c.style.animationDelay = `${(g + ci) * 25}ms`;
+      cellsDiv.appendChild(c);
+    });
+    groupDiv.appendChild(cellsDiv);
+    numGroups.appendChild(groupDiv);
+  }
+
+  /* ── 상세 표: 10개씩 구분선 ── */
+  const rows = document.getElementById('tbl-rows');
+  rows.innerHTML = '';
+  samples.forEach(({ num, acc }, i) => {
+    // 10개 단위 구분선 삽입 (0번째 제외)
+    if (i > 0 && i % CHUNK === 0) {
+      const sep = document.createElement('div');
+      sep.className = 'tbl-group-sep';
+      sep.innerHTML = `<div class="glabel">${i+1}번 ~ ${Math.min(i+CHUNK, samples.length)}번</div>`;
+      rows.appendChild(sep);
+    } else if (i === 0) {
+      const sep = document.createElement('div');
+      sep.className = 'tbl-group-sep';
+      sep.innerHTML = `<div class="glabel">1번 ~ ${Math.min(CHUNK, samples.length)}번</div>`;
+      rows.appendChild(sep);
     }
 
-    renderResults(samples, { N, n, r, k, kRaw });
-  }
+    const row = document.createElement('div');
+    row.className = 'tbl-row' + (i === 0 ? ' fr' : '');
 
-  function renderResults(samples, { N, n, r, k, kRaw }) {
-    const address = document.getElementById('address').value.trim();
-    document.getElementById('results-title').textContent =
-      `${selectedCrop} 생산조사 — 추출 결과 (${samples.length}개)`;
-    const meta = document.getElementById('results-meta');
-
-    meta.innerHTML = `
-      <span class="meta-chip">작물: ${selectedCrop}</span>
-      <span class="meta-chip">N = ${N}</span>
-      <span class="meta-chip">n = ${n}</span>
-      <span class="meta-chip">k = ${disp1(k)}&nbsp;(${N}÷${n}=${kRaw.toFixed(4)}→반올림)</span>
-      <span class="meta-chip">r = ${disp1(r)}</span>
-      ${address ? `<span class="meta-chip" style="background:var(--field-pale);border-color:var(--field);color:var(--field);">📍 ${address}</span>` : ''}
-    `;
-
-    // Number grid
-    const grid = document.getElementById('number-grid');
-    grid.innerHTML = '';
-    samples.forEach(({ num }, i) => {
-      const cell = document.createElement('div');
-      cell.className = 'num-cell' + (i === 0 ? ' start-cell' : '');
-      cell.textContent = num;
-      cell.style.animationDelay = `${i * 40}ms`;
-      cell.title = `제${i+1}번 표본`;
-      grid.appendChild(cell);
-    });
-
-    // Table
-    const tbody = document.getElementById('result-tbody');
-    tbody.innerHTML = '';
-
-    samples.forEach(({ num, acc }, i) => {
-      const tr = document.createElement('tr');
-      let formula;
-
-      if (i === 0) {
-        // 1번: 시작난수 r → 소수 첫째 자리 표기(r.0) → 절사 = r
-        formula = `시작난수 &nbsp;<b>${disp1(r)}</b>&nbsp; → 절사 = <b>${num}</b>`;
+    let fHtml;
+    if (i === 0) {
+      fHtml = `시작난수 <b>${disp1(r)}</b> → 절사=<b>${num}</b>`;
+    } else {
+      const prev = samples[i-1].acc;
+      const sum  = prev + k;
+      const sumR = round1(sum);
+      if (disp1(sum) !== disp1(sumR)) {
+        fHtml = `${disp1(prev)}+${disp1(k)}=${disp1(sum)}→반올림→${disp1(sumR)}→절사=<b>${num}</b>`;
       } else {
-        const prevAcc  = samples[i - 1].acc;           // 이전 단계 누적값 (소수 첫째)
-        const sumExact = prevAcc + k;                   // 더한 원시값
-        const sumR1    = round1(sumExact);              // 소수 둘째 반올림 결과 = acc
-        // sumExact 와 sumR1 이 같으면 반올림 표시 생략
-        const needRound = disp1(sumExact) !== disp1(sumR1);
-        if (needRound) {
-          formula = `${disp1(prevAcc)} + ${disp1(k)} = ${disp1(sumExact)}&nbsp;→&nbsp;반올림 ${disp1(sumR1)}&nbsp;→&nbsp;절사 = <b>${num}</b>`;
-        } else {
-          formula = `${disp1(prevAcc)} + ${disp1(k)} = ${disp1(sumR1)}&nbsp;→&nbsp;절사 = <b>${num}</b>`;
-        }
+        fHtml = `${disp1(prev)}+${disp1(k)}=${disp1(sumR)}→절사=<b>${num}</b>`;
       }
+    }
 
-      tr.innerHTML = `
-        <td class="idx">${i + 1}</td>
-        <td class="num ${i === 0 ? 'start' : ''}">${num}${i === 0 ? '<span class="start-tag">시작</span>' : ''}</td>
-        <td class="formula-cell">${formula}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+    row.innerHTML =
+      `<div class="c-idx">${i+1}</div>` +
+      `<div class="c-num${i===0?' fr':''}">${num}${i===0?'<span class="stag">시작</span>':''}</div>` +
+      `<div class="c-formula${i===0?' fr':''}">${fHtml}</div>`;
+    rows.appendChild(row);
+  });
 
-    resultsSection.classList.add('visible');
-    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  document.getElementById('results').classList.add('show');
+  setTimeout(() =>
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' }), 80);
+}
 
-  function copyResults() {
-    const rows = document.querySelectorAll('#result-tbody tr');
-    const lines = ['순번\t추출번호\t계산식'];
-    rows.forEach((tr, i) => {
-      const cells = tr.querySelectorAll('td');
-      lines.push(`${cells[0].textContent}\t${cells[1].textContent.replace('시작','').trim()}\t${cells[2].textContent}`);
-    });
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
-      const btn = document.querySelector('.btn-copy');
-      btn.textContent = '✓ 복사 완료!';
-      setTimeout(() => {
-        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 번호 목록 복사`;
-      }, 2000);
-    });
-  }
+/* ── 복사 ── */
+function copyResults() {
+  const address = document.getElementById('address').value.trim();
+  const rowEls  = document.querySelectorAll('#tbl-rows .tbl-row');
+  const lines   = [
+    `[${selCrop} 생산조사 / ${selPort}포구${address?' / '+address:''}]`,
+    'No.\t추출번호\t계산식'
+  ];
+  rowEls.forEach(row => {
+    const ds = row.querySelectorAll('div');
+    lines.push(`${ds[0].textContent.trim()}\t${ds[1].textContent.replace('시작','').trim()}\t${ds[2].textContent.trim()}`);
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ 복사 완료!';
+    btn.style.background = 'var(--glight)';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 번호 목록 복사`;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2500);
+  });
+}
 </script>
 </body>
 </html>
